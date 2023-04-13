@@ -11,6 +11,11 @@ use Drupal\update_helper\Updater as OriginalUpdater;
 
 /**
  * An altered updater that allows executing preloaded CUDs.
+ *
+ * @phpstan-type GlobalUpdateActions array{install_modules?: string[], install_themes?: string[], import_configs?: string[]}
+ * @phpstan-type ConfigItemUpdate array{add?: array<string, mixed>, change?: array<string, mixed>, delete?: array<string, mixed>}
+ * @phpstan-type ConfigUpdateDefinition array{expected_config: array<string, mixed>, update_actions: non-empty-array<string, ConfigItemUpdate>}
+ * @phpstan-type ConfigUpdateDefinitions array{__global_actions: GlobalUpdateActions}|non-empty-array<string, ConfigUpdateDefinition>
  */
 class Updater extends OriginalUpdater {
 
@@ -20,6 +25,7 @@ class Updater extends OriginalUpdater {
   public function executeUpdate($module, $update_definition_name) : bool {
     $this->warningCount = 0;
 
+    /** @phpstan-var ConfigUpdateDefinitions $update_definitions */
     $update_definitions = $this->configHandler->loadUpdate($module, $update_definition_name);
     $this->doExecuteUpdate($update_definitions);
 
@@ -38,6 +44,8 @@ class Updater extends OriginalUpdater {
    *
    * @param array $update_definitions
    *   The update definitions.
+   *
+   * @phpstan-param ConfigUpdateDefinitions $update_definitions
    */
   public function doExecuteUpdate(array $update_definitions) : void {
     if (isset($update_definitions[UpdateDefinitionInterface::GLOBAL_ACTIONS])) {

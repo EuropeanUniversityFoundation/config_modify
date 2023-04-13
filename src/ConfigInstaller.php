@@ -12,7 +12,6 @@ use Drupal\Core\Config\StorageInterface;
 use Drupal\Core\Config\TypedConfigManagerInterface;
 use Drupal\Core\Extension\ExtensionPathResolver;
 use Drupal\update_helper\UpdateDefinitionInterface;
-use Drupal\update_helper\Updater;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
 /**
@@ -23,10 +22,8 @@ use Symfony\Component\EventDispatcher\EventDispatcherInterface;
  * config that is defined by modules.
  *
  * @phpstan-type ConfigDependencies (array{config: string[], modules?: string[], themes?: string[]}|array{config?: string[], modules: string[], themes?: string[]}|array{config?: string[], modules?: string[], themes: string[]})
- * @phpstan-type GlobalUpdateActions array{install_modules?: string[], install_themes?: string[], import_configs?: string[]}
- * @phpstan-type ConfigUpdateActions array{add?: array<string, mixed>, change?: array<string, mixed>, delete?: array<string, mixed>}
- * @phpstan-type ConfigUpdateDefinitions array<string, array{expected_config: array<string, mixed>, update_actions: non-empty-array<string, ConfigUpdateActions>}>
- * @phpstan-type ModifyDefinition array{dependencies?: ConfigDependencies, __global_actions?: GlobalUpdateActions, items: ConfigUpdateDefinitions}
+ * @phpstan-import-type ConfigUpdateDefinitions from Updater
+ * @phpstan-type ModifyDefinition array{dependencies?: ConfigDependencies, items: ConfigUpdateDefinitions}
  */
 class ConfigInstaller extends OriginalConfigInstaller {
 
@@ -87,7 +84,9 @@ class ConfigInstaller extends OriginalConfigInstaller {
     }
 
     // Filter out any previously applied files.
-    $list = array_diff($storage->listAll(), $alterations_applied->get('files'));
+    $previously_applied_files = $alterations_applied->get('files');
+    assert(is_array($previously_applied_files), "Incorrect schema for 'config_modify.applied'.");
+    $list = array_diff($storage->listAll(), $previously_applied_files);
 
     // Read all alter files and filter out any, where the dependencies aren't
     // met yet.

@@ -42,7 +42,7 @@ class ModifyTest extends KernelTestBase {
   /**
    * Installation of a module should cause modifications to be run.
    */
-  public function testModuleInstallRunsModification() {
+  public function testModuleInstallRunsModification() : void {
     $this->assertEquals([], $this->config("config_modify.applied")->get("files"), "Config Modify files were already applied at the start of the test.");
 
     $this->moduleInstaller->install(["test_config_modify_enable"]);
