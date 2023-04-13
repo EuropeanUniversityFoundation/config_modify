@@ -9,6 +9,8 @@ use Drupal\KernelTests\KernelTestBase;
 
 /**
  * Test that the config_modify module correctly updates config.
+ *
+ * @group config_modify
  */
 class ModifyTest extends KernelTestBase {
 
