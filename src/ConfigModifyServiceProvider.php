@@ -10,6 +10,8 @@ use Drupal\Core\DependencyInjection\ServiceProviderBase;
 
 /**
  * Overwrite the `config.installer` service.
+ *
+ * @internal
  */
 class ConfigModifyServiceProvider extends ServiceProviderBase {
 

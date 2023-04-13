@@ -24,6 +24,8 @@ use Symfony\Component\EventDispatcher\EventDispatcherInterface;
  * @phpstan-type ConfigDependencies (array{config: string[], modules?: string[], themes?: string[]}|array{config?: string[], modules: string[], themes?: string[]}|array{config?: string[], modules?: string[], themes: string[]})
  * @phpstan-import-type ConfigUpdateDefinitions from Updater
  * @phpstan-type ModifyDefinition array{dependencies?: ConfigDependencies, items: ConfigUpdateDefinitions}
+ *
+ * @internal
  */
 class ConfigInstaller extends OriginalConfigInstaller {
 

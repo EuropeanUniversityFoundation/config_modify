@@ -16,6 +16,8 @@ use Drupal\update_helper\Updater as OriginalUpdater;
  * @phpstan-type ConfigItemUpdate array{add?: array<string, mixed>, change?: array<string, mixed>, delete?: array<string, mixed>}
  * @phpstan-type ConfigUpdateDefinition array{expected_config: array<string, mixed>, update_actions: non-empty-array<string, ConfigItemUpdate>}
  * @phpstan-type ConfigUpdateDefinitions array{__global_actions: GlobalUpdateActions}|non-empty-array<string, ConfigUpdateDefinition>
+ *
+ * @internal
  */
 class Updater extends OriginalUpdater {
 
