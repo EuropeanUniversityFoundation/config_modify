@@ -27,7 +27,7 @@ class Updater extends OriginalUpdater {
   public function executeUpdate($module, $update_definition_name) : bool {
     $this->warningCount = 0;
 
-    /** @phpstan-var ConfigUpdateDefinitions $update_definitions */
+    /** @var ConfigUpdateDefinitions $update_definitions */
     $update_definitions = $this->configHandler->loadUpdate($module, $update_definition_name);
     $this->doExecuteUpdate($update_definitions);
 

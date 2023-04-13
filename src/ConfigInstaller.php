@@ -63,6 +63,17 @@ class ConfigInstaller extends OriginalConfigInstaller {
     $this->installOptionalAlterConfig();
   }
 
+  /**
+   * Apply any configuration modifications that have their dependencies met.
+   *
+   * Will look through all the enabled modules' config/modify folders and apply
+   * modifications for which the dependencies are now met and which have not
+   * been previously applied.
+   *
+   * @param \Drupal\Core\Config\StorageInterface|null $storage
+   *   The storage to load modification files from. If not set will default to
+   *   the config/modify folder of all enabled modules.
+   */
   public function installOptionalAlterConfig(StorageInterface $storage = NULL) : void {
     // When this module is being installed this function is called but our
     // service provider hasn't run yet so we don't have the required functions
