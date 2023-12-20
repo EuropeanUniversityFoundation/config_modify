@@ -12,7 +12,7 @@ use Drupal\KernelTests\KernelTestBase;
  *
  * @group config_modify
  */
-class ModifyTest extends KernelTestBase {
+class InstallTest extends KernelTestBase {
 
   /**
    * The Drupal module installer.
@@ -26,7 +26,8 @@ class ModifyTest extends KernelTestBase {
     'config',
     'config_update',
     'update_helper',
-    'config_modify',
+    'test_config_modify',
+    'test_config_modify_enable',
   ];
 
   /**
@@ -37,21 +38,18 @@ class ModifyTest extends KernelTestBase {
 
     $this->moduleInstaller = \Drupal::service("module_installer");
 
-    $this->installConfig(["config_modify"]);
+    $this->installConfig(["test_config_modify", "test_config_modify_enable"]);
   }
 
   /**
-   * Installation of a module should cause modifications to be run.
+   * Installation of the config_modify module should not apply anything.
    */
   public function testModuleInstallRunsModification() : void {
-    $this->moduleInstaller->install(["test_config_modify"]);
-    $this->assertEquals([], $this->config("config_modify.applied")->get("files"), "Config Modify files were already applied at the start of the test.");
-
-    $this->moduleInstaller->install(["test_config_modify_enable"]);
+    $this->moduleInstaller->install(["config_modify"]);
 
     $updated_config = $this->config("test_config_modify.settings");
     $this->assertEquals(["test_config_modify.settings_when_create"], $this->config("config_modify.applied")->get("files"));
-    $this->assertTrue($updated_config->get("change_me"));
+    $this->assertFalse($updated_config->get("change_me"));
     $this->assertFalse($updated_config->get("remain"));
   }
 

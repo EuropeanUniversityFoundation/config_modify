@@ -1,0 +1,5 @@
+services:
+  config_modify.commands:
+    class: \Drupal\config_modify\Commands\ConfigModifyCommands
+    tags:
+      - { name: drush.command }

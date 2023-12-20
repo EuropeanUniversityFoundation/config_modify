@@ -58,9 +58,44 @@ class ConfigInstaller extends OriginalConfigInstaller {
       return;
     }
 
+    // We don't install anything when no dependency is specified because it
+    // means the storage is scoped to a specific entity.
+    if (empty($dependency)) {
+      return;
+    }
+
+    // We don't run any modifications when the config_modify module is first
+    // enabled because this can create irreconcilable race conditions between
+    // update hooks. We assume that any config/modify files that already exist
+    // have been applied through other means.
+    if (isset($dependency['module']) && $dependency['module'] === "config_modify") {
+      $this->markAvailableModificationsAsApplied();
+      return;
+    }
+
     // We ignore the storage here because it's specifically for
     // `config/optional` and that's not the folder we want.
     $this->installOptionalAlterConfig();
+  }
+
+  /**
+   * Mark all the available modifications as applied.
+   *
+   * This should be called before update hooks are applied. New code can
+   * introduce new config/modify files and also enable new modules. Those update
+   * hooks should also make any needed configuration modifications themselves.
+   * If a new config/modify file is accidentally run in such a scenario then
+   * update hooks will unpredictably fail.
+   */
+  public function markAvailableModificationsAsApplied() : void {
+    $storage = new ExtensionInstallStorage($this->getActiveStorages(), "config/modify", StorageInterface::DEFAULT_COLLECTION, TRUE, $this->installProfile);
+
+    $config_to_mark = $this->getApplicableConfigModifications($storage);
+
+    $alterations_applied = $this->configFactory->getEditable("config_modify.applied");
+    $alterations_applied
+      ->set("files", $alterations_applied->get("files") + array_keys($config_to_mark))
+      ->save();
   }
 
   /**
@@ -85,16 +120,41 @@ class ConfigInstaller extends OriginalConfigInstaller {
     }
 
     $alterations_applied = $this->configFactory->getEditable("config_modify.applied");
-    $enabled_extensions = $this->getEnabledExtensions();
-    $existing_config = $this->getActiveStorages()->listAll();
 
     // Create the storages to read configuration from.
     if ($storage === NULL) {
       // Search the install profile's optional configuration too.
       // We don't need to do anything special for the install profile based on a
-      // dependency because we never create new configb ut only alter existing.
+      // dependency because we never create new config but only alter existing.
       $storage = new ExtensionInstallStorage($this->getActiveStorages(), "config/modify", StorageInterface::DEFAULT_COLLECTION, TRUE, $this->installProfile);
     }
+
+    // Read all alter files and filter out any, where the dependencies aren't
+    // met yet.
+    $config_to_alter = $this->getApplicableConfigModifications($storage);
+
+    if (!empty($config_to_alter)) {
+      foreach ($config_to_alter as $data) {
+        $this->updater->doExecuteUpdate($data["items"]);
+      }
+
+      $alterations_applied->set("files", $alterations_applied->get("files") + array_keys($config_to_alter))->save();
+    }
+  }
+
+  /**
+   * Get all config modifications not-yet applied and that meet dependencies.
+   *
+   * @param \Drupal\Core\Config\StorageInterface $storage
+   *   The storage to search.
+   *
+   * @return array<string, ModifyDefinition>
+   *   A list of config modifications keyed by filename.
+   */
+  protected function getApplicableConfigModifications(StorageInterface $storage) : array {
+    $alterations_applied = $this->configFactory->getEditable("config_modify.applied");
+    $enabled_extensions = $this->getEnabledExtensions();
+    $existing_config = $this->getActiveStorages()->listAll();
 
     // Filter out any previously applied files.
     $previously_applied_files = $alterations_applied->get('files');
@@ -103,7 +163,7 @@ class ConfigInstaller extends OriginalConfigInstaller {
 
     // Read all alter files and filter out any, where the dependencies aren't
     // met yet.
-    $config_to_alter = array_filter(
+    return array_filter(
       $storage->readMultiple($list),
       /** @phpstan-var ModifyDefinition $data */
       function ($data, $alter_name) use ($enabled_extensions, $existing_config) {
@@ -114,20 +174,12 @@ class ConfigInstaller extends OriginalConfigInstaller {
         $config_item_names = array_keys($config_items);
         // The config items that should be altered are implicit dependencies so
         // for our validation we must add them.
-        $data['dependencies']['config'] = ($data['dependencies']['config'] ?? []) + $config_item_names;
+        $data['dependencies']['config'] = array_merge($data['dependencies']['config'] ?? [], $config_item_names);
 
         return $this->validateDependencies($alter_name, $data, $enabled_extensions, $existing_config);
       },
       ARRAY_FILTER_USE_BOTH
     );
-
-    if (!empty($config_to_alter)) {
-      foreach ($config_to_alter as $data) {
-        $this->updater->doExecuteUpdate($data["items"]);
-      }
-
-      $alterations_applied->set("files", $alterations_applied->get("files") + array_keys($config_to_alter))->save();
-    }
   }
 
 }
